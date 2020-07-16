@@ -1,0 +1,129 @@
+<!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+{{include '../header_meta.html'}}
+<link href="/_assets/bootstrap-table/bootstrap-table.min.css" rel="stylesheet" />
+<link href="/_assets/bootstrap-table/extensions/tree-column/bootstrap-table-tree-column.css" rel="stylesheet" />
+<link href="/_assets/css/bootstrap-editable.css" rel="stylesheet" />
+<script src="/_assets/bootstrap-table/bootstrap-table.min.js"></script>
+<script src="/_assets/bootstrap-table/extensions/tree-column/bootstrap-table-tree-column.js"></script>
+<script src="/_assets/js/bootstrap-editable.js"></script>
+<script src="/_assets/bootstrap-table/extensions/editable/bootstrap-table-editable.js"></script>
+</head>
+
+<body>
+{{include '../top_navbar.html'}}
+
+<div class="container-fluid">
+    <div class="row">
+        <!--sidebar start-->
+        {{include '../left_sidebar.html'}}
+        <!--sidebar end-->
+
+        <!--content start-->
+        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" id="main">
+            <h3 class="page-header"><span>></span>菜单列表</h3>
+            <div class="panel-body" id="main-body">
+                <div id="data-tb-toolbar" class="btn-group">
+                    <button id="btn_edit" type="button" class="btn btn-default">
+                        <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>编辑
+                    </button>
+                    <button id="btn_delete" type="button" class="btn btn-default">
+                        <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>删除
+                    </button>
+                </div>
+                <table id="tb_loader">
+                    <thead>
+                        <tr>
+                            <th data-radio="true"></th>
+                            <th data-field="menu_name">菜单名称</th>
+                            <th data-field="menu_url">url地址</th>
+                            <th data-field="menu_sort" data-editable="true">排序</th>
+                            <th data-field="if_show" data-formatter="formatStatus">显示</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
+        <!--content end-->
+    </div>
+</div>
+
+<div id="np-alert"></div>
+
+<script type="text/javascript">
+var $tb_loader = $('#tb_loader');
+
+$('#btn_edit').on('click', function(){
+    var selected = $tb_loader.bootstrapTable('getSelections');
+    if (selected.length < 1) {
+        return false;
+    }
+
+    location.href = "{{url('nPubModuleNopCoreModule:BackendMap:edit')|noescape}}?map_id="+selected[0].map_id;
+});
+$('#btn_delete').on('click', function(){
+    var selected = $tb_loader.bootstrapTable('getSelections');
+    if (selected.length < 1)
+        return false;
+
+    Modal.confirm("#np-alert", {
+        msg: '确定要删除此菜单项？注意此操作不可逆'
+    }).on(function(e){
+        if (e) {
+            $.ajax({
+                url: "{{url('nPubModuleNopCoreModule:BackendMap:del')|noescape}}",
+                type: 'get',
+                dataType: 'json',
+                data: {map_id:selected[0].map_id},
+                success: function(r) {
+                    if (r.success) {
+                        $tb_loader.bootstrapTable('removeByUniqueId', selected[0].map_id);
+                    } else {
+                        Modal.alert('#np-alert', {msg:r.error_msg});
+                    }
+                }
+
+            });
+        }
+    });
+});
+
+var backend_maps = jQuery.parseJSON('{{php echo json_encode($backend_maps, JSON_UNESCAPED_UNICODE)}}');
+$tb_loader.bootstrapTable({
+    treeShowField: 'menu_name',
+    idField: 'map_id',
+    parentIdField: 'pid',
+    toolbar: '#data-tb-toolbar', //工具按钮容器
+    showColumns: true, //是否显示所有的列
+    clickToSelect: true,
+    uniqueId: 'map_id', //每一行的唯一标识，一般为主键列
+    striped: true,
+    height: 500,
+    data: backend_maps,
+    onEditableSave: function(field, row, oldValue, obj) {
+        if (oldValue != row[field]) {
+            $.ajax({
+                url: "{{url('nPubModuleNopCoreModule:BackendMap:editMenuSort')|noescape}}",
+                type: "get",
+                dataType: "json",
+                data: {map_id:row['map_id'],menu_sort:row[field]},
+                success: function(r) {
+                    if (r.success) {
+                        $(obj).html(row[field]);
+                    } else {
+                        $(obj).html(oldValue);
+                        Modal.alert('#np-alert', {msg:r.error_msg});
+                    }
+                }
+            });
+        }
+    }
+});
+
+function formatStatus(status, row, index) {
+    return status ? '<span class="glyphicon glyphicon-ok icon-ok"></span>' : '<span class="glyphicon glyphicon-remove icon-err"></span>';
+}
+</script>
+</body>
+</html>

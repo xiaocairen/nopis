@@ -1,0 +1,145 @@
+<!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+{{include '../header_meta.html'}}
+<link rel="stylesheet" href="/_assets/bootstrap-switch/css/bootstrap-switch.min.css">
+<script src="/_assets/bootstrap-switch/js/bootstrap-switch.min.js"></script>
+</head>
+
+<body>
+{{include '../top_navbar.html'}}
+
+<div class="container-fluid">
+    <div class="row">
+        <!--sidebar start-->
+        {{include '../left_sidebar.html'}}
+        <!--sidebar end-->
+
+        <!--content start-->
+        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" id="main">
+            <h3 class="page-header"><span>></span>编辑管理员帐户 <a href="{{url('nPubModuleNopCoreModule:Admin:index')}}"><span class="glyphicon glyphicon-share-alt"></span> 返回</a></h3>
+            <div id="main-form">
+                <form class="form-backend-map form-horizontal" role="form">
+                    <fieldset>
+                        <legend>基本信息</legend>
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">用户名</label>
+                            <div class="col-sm-4 has-feedback">
+                                <input class="form-control" type="text" value="{{$admin->username}}" readonly="readonly" />
+                                <span class="glyphicon glyphicon-ok form-control-feedback" style="display:none"></span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">密码</label>
+                            <div class="col-sm-4 has-feedback">
+                                <input class="form-control" type="password" name="password" id="password" value="" />
+                                <span class="glyphicon glyphicon-ok form-control-feedback" style="display:none"></span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">密码确认</label>
+                            <div class="col-sm-4 has-feedback">
+                                <input class="form-control" type="password" name="repassword" value="" />
+                                <span class="glyphicon glyphicon-ok form-control-feedback" style="display:none"></span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">真实姓名</label>
+                            <div class="col-sm-4">
+                                <input class="form-control" type="text" name="realname" value="{{$admin->realname}}" />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">性别</label>
+                            <div class="col-sm-4">
+                                <input type="checkbox" id="sex_switch"{{if $admin->sex == "man"}} checked="checked"{{/if}} data-animate="false" data-on-color="success" data-off-color="warning" data-on-text="男" data-off-text="女" />
+                                <input name="sex" id="sex" type="hidden" value="{{$admin->sex}}"  />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label" for="forbid_switch">状态:</label>
+                            <div class="col-sm-4">
+                                <input type="checkbox" class="form-control" id="forbid_switch"{{if !$admin->is_forbid}} checked="checked"{{/if}} data-animate="false" data-on-color="success" data-off-color="warning" data-on-text="正常" data-off-text="禁用" />
+                                <input name="is_forbid" id="is_forbid" type="hidden" value="{{$admin->is_forbid}}"  />
+                            </div>
+                        </div>
+                    </fieldset>
+                    <fieldset>
+                        <legend>所属管理员组</legend>
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">管理员组</label>
+                            <div class="col-sm-6 checkbox">
+                                <label n:foreach="$groups as $g" style="margin-right: 20px;margin-bottom: 5px;">
+                                    <input type="checkbox" name="group_id[]" value="{{$g->group_id}}"{{if in_array($g->group_id, $admin_group_ids)}} checked="checked"{{/if}} />{{$g->group_name}}
+                                </label>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <div class="form-group">
+                        <div class="col-sm-2"><input type="hidden" name="user_id" value="{{$admin->user_id}}" /></div>
+                        <div class="col-sm-10 form-submit-wraper">
+                            <button class="button button-primary" type="submit">提交保存</button>
+                            <span class="submit-process"><span class="loading"></span><p>正在提交中...</p></span>
+                            <span class="submit-tooltip"><span class="glyphicon glyphicon-exclamation-sign"></span><p></p></span>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!--content end-->
+    </div>
+</div>
+
+<script src="/_assets/js/jquery.validate.min.js"></script>
+<script type="text/javascript">
+$("#sex_switch").bootstrapSwitch().on('switchChange.bootstrapSwitch', function(event, state) {
+    if (state) {
+        $("#sex").val('man');
+    } else {
+        $("#sex").val('woman');
+    }
+});
+
+$("#forbid_switch").bootstrapSwitch().on('switchChange.bootstrapSwitch', function(event, state) {
+    if (state) {
+        $("#is_forbid").val(0);
+    } else {
+        $("#is_forbid").val(1);
+    }
+});
+
+$(".form-backend-map").validate({
+    rules: {
+        password: {minlength:6},
+        repassword: {equalTo:"#password"}
+    },
+    messages: {
+        password: {minlength:"密码长度小于6位"},
+        repassword: {equalTo:"两次输入的密码不一致"}
+    },
+    submitHandler: function(form){
+        var btn = $(form).find(":submit");
+        btn.attr("disabled", "disabled");
+        $(".submit-process").css("display", "inline-block");
+        $.ajax({
+            url:"{{url('nPubModuleNopCoreModule:Admin:edit')|noescape}}",
+            type:"post",
+            dataType:"json",
+            data: $(form).serializeArray(),
+            success : function(r){
+                btn.removeAttr("disabled");
+                if (r.success) {
+                    $(".submit-process").find("p").html("保存成功，跳转中...");
+                    setTimeout("location.href='{{url('nPubModuleNopCoreModule:Admin:index')|noescape}}'", 800);
+                } else {
+                    $(".submit-process").hide();
+                    $(".submit-tooltip").css("display", "inline-block").find("p").html(r.error_msg);
+                }
+            }
+        });
+        return false;
+    }
+});
+</script>
+</body>
+</html>

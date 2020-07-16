@@ -1,0 +1,142 @@
+<!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+{{include '../header_meta.html'}}
+<link href="/_assets/bootstrap-table/bootstrap-table.min.css" rel="stylesheet" />
+<script src="/_assets/bootstrap-table/bootstrap-table.min.js"></script>
+<style type="text/css">
+#form-group-bm .modal-lg{width: 750px;}
+#permission_list .form-group{margin-bottom: 0;}
+#permission_list .col-sm-2{width: 140px; color: #666;font-weight: normal;}
+#permission_list h5{display: inline-block;float: left;width:85px;margin-left: 15px;padding-left: 20px;color: #666;}
+</style>
+</head>
+
+<body>
+{{include '../top_navbar.html'}}
+
+<div class="container-fluid">
+    <div class="row">
+        <!--sidebar start-->
+        {{include '../left_sidebar.html'}}
+        <!--sidebar end-->
+
+        <!--content start-->
+        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" id="main">
+            <h3 class="page-header"><span>></span>组员列表 -- {{$group_name}} <a href="{{url('nPubModuleNopCoreModule:MemberGroup:index')}}"><span class="glyphicon glyphicon-share-alt"></span> 返回</a></h3>
+            <div class="panel-body" id="main-body">
+                <div id="data-tb-toolbar" class="btn-group">
+                    <button id="btn_delete" type="button" class="btn btn-default">
+                        <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>移除组员
+                    </button>
+                </div>
+                <table id="tb_loader">
+                    <thead>
+                        <tr>
+                            <th data-radio="true"></th>
+                            <th data-field="username">用户帐号</th>
+                            <th data-field="phone">注册手机</th>
+                            <th data-field="realname">真实姓名</th>
+                            <th data-field="reg_time">注册时间</th>
+                            <th data-field="last_login_time">最后登陆时间</th>
+                            <th data-field="is_forbid" data-formatter="formatStatus">状态</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
+        <!--content end-->
+    </div>
+</div>
+
+<div id="np-alert"></div>
+
+<!-- Modal -->
+<form class="form-group-bm form-horizontal" id="form-group-bm" role="form">
+<div class="modal fade" id="modalPermissions" tabindex="-1" role="dialog" aria-labelledby="modalPermissions">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">权限 - <span id="selected-groupname"></span></h4>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
+            <div class="modal-footer">
+                <button type="button" class="button button-default button-rounded button-pill button-small" data-dismiss="modal" aria-label="Close">关 闭</button>
+                <button type="button" class="button button-primary button-rounded button-pill button-small" id="save-permission">保 存</button>
+            </div>
+        </div>
+    </div>
+</div>
+</form>
+
+<script type="text/javascript">
+var group_id = {{$group_id}};
+var $tb_loader = $('#tb_loader');
+
+$('#btn_delete').on('click', function(){
+    var selected = $tb_loader.bootstrapTable('getSelections');
+    if (selected.length < 1)
+        return false;
+
+    Modal.confirm("#np-alert", {
+        msg: '确定要将此用户从该组中移出？'
+    }).on(function(e){
+        if (e) {
+            $.ajax({
+                url: "{{url('nPubModuleNopCoreModule:MemberGroup:delFromGroup')|noescape}}",
+                type: 'get',
+                dataType: 'json',
+                data: {group_id:group_id,user_id:selected[0].user_id},
+                success: function(r) {
+                    if (r.success) {
+                        $tb_loader.bootstrapTable('removeByUniqueId', selected[0].user_id);
+                    } else {
+                        Modal.alert('#np-alert', {msg:r.error_msg});
+                    }
+                }
+
+            });
+        }
+    });
+});
+
+$tb_loader.bootstrapTable({
+    url: "{{url('nPubModuleNopCoreModule:MemberGroup:_memberList')|noescape}}", //请求后台的URL（*）
+    method: 'get', //请求方式（*）
+    toolbar: '#data-tb-toolbar', //工具按钮容器
+    pagination: true, //是否显示分页（*）
+    sortable: false, //是否启用排序
+    sidePagination: "server", //分页方式：client客户端分页，server服务端分页（*）
+    pageNumber: 1, //初始化加载第一页，默认第一页
+    pageSize: 10, //每页的记录行数（*）
+    pageList: [10, 25, 50, 100], //可供选择的每页的行数（*）
+    paginationLoop: false,
+    showColumns: true, //是否显示所有的列
+    clickToSelect: true,
+    uniqueId: "user_id", //每一行的唯一标识，一般为主键列
+    queryParams: function(params) {
+        var p = {
+            group_id: group_id,
+            limit: params.limit,
+            offset: params.offset
+        };
+        return p;
+    },
+    responseHandler: function(r) {
+        if (r.success) {
+            return r.data;
+        } else {
+            Modal.alert('#np-alert', {msg:r.error_msg});
+            return false;
+        }
+    }
+});
+
+function formatStatus(status, row, index) {
+    return status ? '<span class="glyphicon glyphicon-remove icon-err"></span>' : '<span class="glyphicon glyphicon-ok icon-ok"></span>';
+}
+
+</script>
+</body>
+</html>

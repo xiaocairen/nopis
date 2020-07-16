@@ -1,0 +1,61 @@
+#!/usr/bin/env php
+<?php
+/*
+ * This file is part of the eYozi package.
+ *
+ * (c) wangbin <wbhazz@163.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+/**
+ * Create module use '/path/to/php ./pub/console --create:module Blog/IndexModule'
+ * Create emtity use '/path/to/php ./pub/console --create:entity /path/to/generator_config.neon'
+ *
+ * @author Wangbin
+ */
+namespace {
+
+    define('DS', DIRECTORY_SEPARATOR);
+
+    set_time_limit(0);
+
+    use Nopis\Lib\Console\OptCommand;
+    use Nopis\Lib\Console\Command;
+    use Nopis\Lib\Config\Configurator;
+
+    try {
+        // 加载自动加载类
+        require __DIR__ . '/autoload.php';
+        $autoload = new NopisAutoload(include __DIR__ . '/autoload_namespace.php');
+        $autoload->registerAutoload();
+
+
+        $optCmd = new OptCommand();
+
+        // 这里添加系统命令
+        $getOpt = new Command\Getopt([
+            new Command\Option(null, $optCmd->createModule, Command\Getopt::REQUIRED_ARGUMENT),
+            new Command\Option(null, $optCmd->createEntity, Command\Getopt::REQUIRED_ARGUMENT),
+            new Command\Option(null, 'no-debug', Command\Getopt::NO_ARGUMENT),
+        ]);
+        $getOpt->getOptionList($optCmd->createModule)->setDescription($optCmd->getDescription($optCmd->createModule));
+        $getOpt->getOptionList($optCmd->createEntity)->setDescription($optCmd->getDescription($optCmd->createEntity));
+        $getOpt->parse();
+
+        $configurator = Configurator::getInstance([
+            __DIR__ . '/config/config.neon',
+            __DIR__ . '/config/service.neon',
+        ]);
+
+        $response = $optCmd->dispatch($getOpt, $configurator);
+
+        echo !empty($response) ? $response : '', "\n";
+    } catch (\UnexpectedValueException $e) {
+        echo $e->getMessage(), "\n";
+    } catch (\Exception $e) {
+        echo $e->getMessage(), "\n";
+    }
+
+}

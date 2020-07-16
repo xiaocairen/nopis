@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <title>holdle 爬虫测试demo</title>
+        <style type="text/css">
+            .page {
+                margin: 120px auto 0px;
+                width: 80%;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+            }
+            .page span{margin-top: 10px;}
+            input{ width: 200px;padding: 5px 10px;line-height: 20px; }
+        </style>
+        <script src="https://cdn.bootcss.com/jquery/3.4.1/jquery.min.js"></script>
+    </head>
+    <body>
+        <div class="page">
+            <span><input type="text" name="stock_code" placeholder="请输入股票代码" /></span>
+            <span><input type="submit" /></span>
+            <span id="result_show"></span>
+        </div>
+    </body>
+    <script type="text/javascript">
+        $(function(){
+            $('input[type="submit"]').on('click', function(){
+                let stock_code = $.trim($('input[name="stock_code"]').val());
+                if (stock_code.length != 6) {
+                    alert("股票代码必须是六位");
+                    return;
+                }
+                var checkNum = /^[0-9]+$/;
+                if (!checkNum.test(stock_code)) {
+                    alert("股票代码必须是数字");
+                    return;
+                }
+
+                $("#result_show").html("抓取数据中...");
+                $.ajax({
+                    url: "/grab",
+                    type: "get",
+                    dataType: "json",
+                    data: {stock_code:stock_code},
+                    success: function(r) {
+                        if (r.success) {
+                            $("#result_show").html('抓取结果 <font color=green>'+r.data+'</font>');
+                        } else {
+                            $("#result_show").html('<font color=red>'+r.error_msg+'</font>');
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+</html>

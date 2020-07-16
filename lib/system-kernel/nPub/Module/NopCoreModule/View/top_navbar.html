@@ -1,0 +1,18 @@
+<header class="navbar navbar-banner navbar-fixed-top">
+    <div class="container-fluid header-banner">
+        <div class="navbar-header">
+            <div class="banner-logo"><span class="glyphicon glyphicon-th-large navbar-brand banner-icon"></span>NOPIS 后台管理系统</div>
+        </div>
+        <div class="navbar-topmenu">
+            <ul class="topmenu-wraper">
+                <li n:foreach="$bm_tree as $tree" n:if="$tree->if_show"><span class="{{if $tree->active}}active{{/if}}"><a href="javascript:;" id="top-{{$tree->map_id}}">{{$tree->menu_name}}</a></span></li>
+            </ul>
+        </div>
+        <div class="navbar-component">
+            <ul class="component-wraper">
+                <li><span><a href="javascript:;"><span class="glyphicon glyphicon-user"></span> {{$cur_username}}</a></span></li>
+                <li><span><a href="{{url('nPubModuleNopCoreModule:Default:logout')}}"><span class="glyphicon glyphicon-log-out"></span> 退出</a></span></li>
+            </ul>
+        </div>
+    </div>
+</header>

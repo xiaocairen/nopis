@@ -1,0 +1,124 @@
+<!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+{{include '../header_meta.html'}}
+<link rel="stylesheet" href="/_assets/bootstrap-switch/css/bootstrap-switch.min.css">
+<script src="/_assets/bootstrap-switch/js/bootstrap-switch.min.js"></script>
+</head>
+
+<body>
+{{include '../top_navbar.html'}}
+
+<div class="container-fluid">
+    <div class="row">
+        <!--sidebar start-->
+        {{include '../left_sidebar.html'}}
+        <!--sidebar end-->
+
+        <!--content start-->
+        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" id="main">
+            <h3 class="page-header"><span>></span>新增后台菜单</h3>
+            <div id="main-form">
+                <form class="form-backend-map form-horizontal" role="form">
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">父菜单</label>
+                        <div class="col-sm-4">
+                            <select class="form-control" name="pid">
+                                <option value="0">-- 请选择 --</option>
+                                {{foreach $menus as $top}}
+                                <option value="{{$top->map_id}}"{{if $pid == $top->map_id}} selected="selected"{{/if}}>{{$top->menu_name}}</option>
+                                    {{if isset($top->childs)}}
+                                    <option n:foreach="$top->childs as $sub" value="{{$sub->map_id}}"{{if $pid == $sub->map_id}} selected="selected"{{/if}}>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{$sub->menu_name}}</option>
+                                    {{/if}}
+                                {{/foreach}}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label"><span>*</span>名称</label>
+                        <div class="col-sm-4 has-feedback">
+                            <input class="form-control" type="text" name="menu_name" value="" />
+                            <span class="glyphicon glyphicon-ok form-control-feedback" style="display:none"></span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">控制器</label>
+                        <div class="col-sm-4">
+                            <select name="menu_action" class="form-control">
+                                <option value="">-- 请选择 --</option>
+                                <option n:foreach="$menu_actions as $url => $act" value="{{$act}}">{{$url}}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">排序</label>
+                        <div class="col-sm-4">
+                            <input class="form-control" type="text" name="menu_sort" value="100" style="width:80px" />
+                            <p class="help-block">注： 数字越小，显示越靠前</p>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">是否显示</label>
+                        <div class="col-sm-4">
+                            <input type="checkbox" id="if_show_switch" checked="checked" data-animate="false" data-on-color="success" data-off-color="warning" data-on-text="显示" data-off-text="不显示" />
+                            <input name="if_show" id="if_show" type="hidden" value="1"  />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-sm-2"></div>
+                        <div class="col-sm-10 form-submit-wraper">
+                            <button class="button button-primary" type="submit">提交保存</button>
+                            <span class="submit-process"><span class="loading"></span><p>正在提交中...</p></span>
+                            <span class="submit-tooltip"><span class="glyphicon glyphicon-exclamation-sign"></span><p></p></span>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!--content end-->
+    </div>
+</div>
+
+<script src="/_assets/js/jquery.validate.min.js"></script>
+<script type="text/javascript">
+$("#if_show_switch").bootstrapSwitch().on('switchChange.bootstrapSwitch', function(event, state) {
+    if (state) {
+        $("#if_show").val(1);
+    } else {
+        $("#if_show").val(0);
+    }
+});
+
+$(".form-backend-map").validate({
+    rules: {
+        menu_name: {required: true}
+    },
+    messages: {
+        menu_name: {required: "请输入名称"}
+    },
+    submitHandler: function(form){
+        var btn = $(form).find(":submit");
+        btn.attr("disabled", "disabled");
+        $(".submit-process").css("display", "inline-block");
+        $.ajax({
+            url:"{{url('nPubModuleNopCoreModule:BackendMap:add')|noescape}}",
+            type:"post",
+            dataType:"json",
+            data: $(form).serializeArray(),
+            success : function(r){
+                btn.removeAttr("disabled");
+                if (r.success) {
+                    $(".submit-process").find("p").html("保存成功，跳转中...");
+                    setTimeout("location.href='{{url('nPubModuleNopCoreModule:BackendMap:index')|noescape}}'", 800);
+                } else {
+                    $(".submit-process").hide();
+                    $(".submit-tooltip").css("display", "inline-block").find("p").html(r.error_msg);
+                }
+            }
+        });
+        return false;
+    }
+});
+</script>
+</body>
+</html>

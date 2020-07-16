@@ -1,0 +1,89 @@
+<!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+{{include '../header_meta.html'}}
+<style type="text/css">
+    body {
+        font-family: "microsoft yahei";
+        padding-bottom: 40px;
+    }
+    .header{
+        text-align: center;
+        padding: 10px 29px 29px;
+        margin: 0 auto 20px;
+        border-bottom: 1px solid #efefef;
+    }
+
+    .header h1{
+        font-weight: 500;
+        padding-bottom: 15px;
+    }
+    .form-signin {
+        position: relative;
+        width: 600px;
+        padding: 19px 29px 29px;
+        margin: 0 auto 20px;
+    }
+    .form-signin .form-signin-heading,
+    .form-signin .checkbox {
+        margin-bottom: 10px;
+    }
+    .form-signin input[type="text"],
+    .form-signin input[type="password"] {
+        font-size: 16px;
+        height: auto;
+        margin-bottom: 15px;
+        padding: 7px 9px;
+    }
+    #form-signin .vld-tooltip {
+        top:70px;
+        right: 0px;
+    }
+    #form-signin .submit-tooltip {
+        display: inline-block;
+    }
+</style>
+<title>登陆 -- Nopis 管理系统</title>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="header">
+            <h1>小彩人科技</h1>
+            <p>Henan Xiaocairen Technology Corporation</p>
+        </div>
+    </div>
+    <div class="container-fluid">
+        <form class="form-signin" id="form-signin" autocomplete="off" method="post">
+            <div class="form-group has-feedback">
+                <label class="control-label" for="username">账 户：</label>
+                <input class="form-control" type="text" name="{{config('framework.security.form_login.login_field')}}">
+                <span class="glyphicon glyphicon-ok form-control-feedback" style="display:none"></span>
+            </div>
+            <div class="form-group has-feedback">
+                <label class="control-label" for="username">密 码：</label>
+                <input class="form-control" type="password" name="{{config('framework.security.form_login.password_field')}}">
+                <span class="glyphicon glyphicon-ok form-control-feedback" style="display:none"></span>
+            </div>
+            <div class="form-group form-submit-wraper">
+                <input type="hidden" name="{{config('framework.security.form_login.extra_field')}}" value="{{$extraToken}}">
+                <button class="button button-primary" type="submit">登 陆</button>
+                <span n:if="$error" class="submit-tooltip"><span class="glyphicon glyphicon-exclamation-sign"></span>{{$error}}</span>
+            </div>
+        </form>
+    </div>
+</body>
+<script src="_assets/js/jquery.validate.min.js"></script>
+<script type="text/javascript">
+$(".form-signin").validate({
+    rules: {
+        {{config('framework.security.form_login.login_field')}}: {required: true},
+        {{config('framework.security.form_login.password_field')}}: {required: true}
+    },
+    messages: {
+        {{config('framework.security.form_login.login_field')}}: {required: "请输入用户名"},
+        {{config('framework.security.form_login.password_field')}}: {required: "请输入密码"}
+    }
+});
+</script>
+</html>
+

@@ -1,0 +1,135 @@
+<!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+{{include '../header_meta.html'}}
+<style type="text/css">
+#main .message{ width: inherit; text-align: center; margin: 30px auto 0;font-size: 15px;color:#ff4400; }
+#main .message > span{display: inline-block;position: relative; padding-left: 20px;}
+#main .message > span > span{margin-right: 10px; position: absolute;left: 0;top:4px;}
+#main p{margin:0}
+#main .red  {color: red;}
+#main a:link     { font: 9pt/11pt verdana, arial, sans-serif; color: red; }
+#main a:visited  { font: 9pt/11pt verdana, arial, sans-serif; color: #4e4e4e; }
+#main h1 { color: #F00; font: 18pt "Verdana"; margin-bottom: 0.5em;}
+#main .bg1{ background-color: #FFFFCC;}
+#main .bg2{ background-color: #EEEEEE;}
+#main .table {background: #AAAAAA; font: 11pt Menlo,Consolas,"Lucida Console"}
+#main .info {
+    background: none repeat scroll 0 0 #F3F3F3;
+    color: #000000;
+    font-size: 11pt;
+    line-height: 160%;
+    margin-bottom: 1em;
+    padding: 1em;
+}
+#main table{margin-top:1em}
+#main .cirbox{
+    position: relative;
+    border: 1px solid #ccc;
+}
+</style>
+</head>
+
+<body>
+{{include '../top_navbar.html'}}
+
+<div class="container-fluid">
+    <div class="row">
+
+        <!--sidebar start-->
+        {{include '../left_sidebar.html'}}
+        <!--sidebar end-->
+
+        <!--content start-->
+        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" id="main">
+            <h3 class="page-header">异常信息</h3>
+            {{if IS_DEBUG}}
+
+<?php
+$traces = $e->getTrace();
+$traces[0]['file'] = $e->getFile();
+$traces[0]['line'] = $e->getLine();
+
+$main_arg = '';
+foreach ($traces[0]['args'] as $arg) {
+    if (is_array($arg))
+        $main_arg .= 'Array,';
+    elseif (is_object($arg))
+        $main_arg .= get_class($arg) . ',';
+    elseif (is_resource($arg))
+        $main_arg .= '#resource,';
+    elseif (is_null($arg))
+        $main_arg .= 'NULL,';
+    elseif (is_bool($arg))
+        $main_arg .= $arg ? 'TRUE,' : 'FALSE,';
+    elseif (is_string($arg) && empty ($arg))
+        $main_arg .= '"",';
+    else
+        $main_arg .= ((string) $arg) . ',';
+}
+
+$main_str = $traces[0]['file']
+        . ' (' . $traces[0]['line'] . ')'
+        . ' [' . (isset($traces[0]['class']) ? $traces[0]['class'] : '')
+        . (isset($traces[0]['type']) ? $traces[0]['type'] : '') . $traces[0]['function']
+        . ' (' . substr($main_arg, 0, -1) . ')]'
+        . ' :: <font color="#ff0000">' . $e->getMessage() . '</font>';
+
+        $trace_str = '<tr class="bg1">'
+            . '<td>%d</td>'
+            . '<td>%s</td>'
+            . '<td>%d</td>'
+            . '<td>%s%s%s(%s)</td>'
+            . '</tr>';
+foreach ($traces as $k => $r) {
+    $args = '';
+    foreach ($r['args'] as $arg) {
+        if (is_array($arg))
+            $args .= 'Array,';
+        elseif (is_object($arg))
+            $args .= get_class($arg) . ',';
+        elseif (is_resource($arg))
+            $args .= '#resource,';
+        elseif (is_null($arg))
+            $args .= 'NULL,';
+        elseif (is_bool($arg))
+            $args .= $arg ? 'TRUE,' : 'FALSE,';
+        elseif (is_string($arg) && empty ($arg))
+            $args .= '"",';
+        else
+            $args .= ((string) $arg) . ',';
+    }
+    $error_str = sprintf($trace_str,
+            $k,
+            isset($r['file']) ? $r['file'] : '',
+            isset($r['line']) ? $r['line'] : '',
+            isset($r['class']) ? $r['class'] : '',
+            isset($r['type']) ? $r['type'] : '',
+            $r['function'],
+            substr($args, 0, -1));
+}
+?>
+            <div class="info cirbox">
+                <p><strong>{{$main_str|noescape}}</strong></p>
+                <table cellpadding="5" cellspacing="1" width="100%" class="table">
+                    <tr class="bg2">
+                        <td>No.</td>
+                        <td>File</td>
+                        <td>Line</td>
+                        <td>Code</td>
+                    </tr>
+                    {{$error_str|noescape}}
+                </table>
+            </div>
+            {{else}}
+            <p class="message"><span><span class="glyphicon glyphicon-exclamation-sign"></span>{{$e->getMessage()}}</span></p>
+            {{/if}}
+        </div>
+        <!--content end-->
+
+    </div>
+</div>
+</body>
+<script type="text/javascript">
+</script>
+</html>

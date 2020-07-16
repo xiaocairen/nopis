@@ -1,0 +1,124 @@
+<!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+{{include '../header_meta.html'}}
+<link rel="stylesheet" href="/_assets/bootstrap-switch/css/bootstrap-switch.min.css">
+<script src="/_assets/bootstrap-switch/js/bootstrap-switch.min.js"></script>
+<style type="text/css">
+#permission_list .form-group{margin-bottom: 0;}
+#permission_list h5{display: inline-block;float: left;width:65px;margin-left: 15px;color: #666;}
+</style>
+</head>
+
+<body>
+{{include '../top_navbar.html'}}
+
+<div class="container-fluid">
+    <div class="row">
+        <!--sidebar start-->
+        {{include '../left_sidebar.html'}}
+        <!--sidebar end-->
+
+        <!--content start-->
+        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" id="main">
+            <h3 class="page-header"><span>></span>新增管理员组</h3>
+            <div id="main-form">
+                <form class="form-group-bm form-horizontal" role="form">
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label"><span>*</span>组名</label>
+                        <div class="col-sm-4 has-feedback">
+                            <input class="form-control" type="text" name="group_name" id="group_name" />
+                            <span class="glyphicon glyphicon-ok form-control-feedback" style="display:none"></span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label" for="forbid_switch">状态</label>
+                        <div class="col-sm-4">
+                            <input type="checkbox" class="form-control" id="forbid_switch" checked="checked" data-animate="false" data-on-color="success" data-off-color="warning" data-on-text="正常" data-off-text="禁用" />
+                            <input name="is_forbid" id="is_forbid" type="hidden" value="0"  />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">权限</label>
+                        <div class="col-sm-9" id="permission_list">
+                        {{foreach $backend_maps as $tk => $toptree}}
+                            <div n:if="isset($toptree->childs)" n:foreach="$toptree->childs as $sk => $subtree" class="form-group"{{if $sk == count($toptree->childs) - 1}} style="margin-bottom:5px;padding-bottom:5px;{{if $tk != count($backend_maps) - 1}}border-bottom:1px solid #eee;{{/if}}"{{/if}}>
+                                {{if !$sk}}
+                                <h5>{{$toptree->menu_name}}</h5>
+                                {{else}}
+                                <h5></h5>
+                                {{/if}}
+                                <label class="col-sm-2 control-label">{{$subtree->menu_name}}</label>
+                                <div class="col-sm-7 checkbox">
+                                {{if isset($subtree->childs)}}
+                                    <label n:foreach="$subtree->childs as $tree" style="margin-right: 20px;margin-bottom: 5px;min-width: 120px;">
+                                        <input type="checkbox" name="map_id[]" value="{{$tree->map_id}}" />{{$tree->menu_name}}
+                                    </label>
+                                {{else}}
+                                    <label style="margin-right: 20px;margin-bottom: 5px;min-width: 120px;">
+                                        <input type="checkbox" name="map_id[]" value="{{$subtree->map_id}}"{{if $subtree->menu_action == 'nPubModuleNopCoreModule:Default:index'}} disabled="disabled" checked="checked"{{/if}} />{{$subtree->menu_name}}
+                                    </label>
+                                {{/if}}
+                                </div>
+                            </div>
+                        {{/foreach}}
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-sm-2"></div>
+                        <div class="col-sm-10 form-submit-wraper">
+                            <button class="button button-primary" type="submit">提交保存</button>
+                            <span class="submit-process"><span class="loading"></span><p>正在提交中...</p></span>
+                            <span class="submit-tooltip"><span class="glyphicon glyphicon-exclamation-sign"></span><p></p></span>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!--content end-->
+    </div>
+</div>
+
+<script src="/_assets/js/jquery.validate.min.js"></script>
+<script type="text/javascript">
+$("#forbid_switch").bootstrapSwitch().on('switchChange.bootstrapSwitch', function(event, state) {
+    if (state) {
+        $("#is_forbid").val(0);
+    } else {
+        $("#is_forbid").val(1);
+    }
+});
+
+$(".form-group-bm").validate({
+    rules: {
+        group_name: {required: true}
+    },
+    messages: {
+        group_name: {required: "请输入组名"}
+    },
+    submitHandler: function(form){
+        var btn = $(form).find(":submit");
+        btn.attr("disabled", "disabled");
+        $(".submit-process").css("display", "inline-block");
+        $.ajax({
+            url:"{{url('nPubModuleNopCoreModule:AdminGroup:add')|noescape}}",
+            type:"post",
+            dataType:"json",
+            data: $(form).serializeArray(),
+            success : function(r){
+                btn.removeAttr("disabled");
+                if (r.success) {
+                    $(".submit-process").find("p").html("保存成功，跳转中...");
+                    setTimeout("location.href='{{url('nPubModuleNopCoreModule:AdminGroup:index')|noescape}}'", 800);
+                } else {
+                    $(".submit-process").hide();
+                    $(".submit-tooltip").css("display", "inline-block").find("p").html(r.error_msg);
+                }
+            }
+        });
+        return false;
+    }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+### macOS ###
+*.DS_Store
+.AppleDouble
+.LSOverride
+
+# svn
+.svn
+.svn/
+*/.svn
+*/.svn/
+
+# pub cache folder
+pub/cache/
+pub/config/
+pub/log/
+pub/routes.php
+pub/generator_config.neon

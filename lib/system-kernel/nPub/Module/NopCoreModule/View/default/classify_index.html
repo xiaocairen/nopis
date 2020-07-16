@@ -1,0 +1,205 @@
+<!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+{{include '../header_meta.html'}}
+<link href="/_assets/bootstrap-table/bootstrap-table.min.css" rel="stylesheet" />
+<link href="/_assets/bootstrap-table/extensions/tree-column/bootstrap-table-tree-column.css" rel="stylesheet" />
+<link href="/_assets/css/bootstrap-editable.css" rel="stylesheet" />
+<script src="/_assets/bootstrap-table/bootstrap-table.min.js"></script>
+<script src="/_assets/bootstrap-table/extensions/tree-column/bootstrap-table-tree-column.js"></script>
+<script src="/_assets/js/bootstrap-editable.js"></script>
+<script src="/_assets/bootstrap-table/extensions/editable/bootstrap-table-editable.js"></script>
+</head>
+
+<body>
+{{include '../top_navbar.html'}}
+
+<div class="container-fluid">
+    <div class="row">
+        <!--sidebar start-->
+        {{include '../left_sidebar.html'}}
+        <!--sidebar end-->
+
+        <!--content start-->
+        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" id="main">
+            <h3 class="page-header"><span>></span>分类列表</h3>
+            <div class="panel-body" id="main-body">
+                <div id="data-tb-toolbar" class="btn-group">
+                    <button id="btn_edit" type="button" class="btn btn-default">
+                        <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>编辑
+                    </button>
+                    <button id="btn_on" type="button" class="btn btn-default">
+                        <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>启用
+                    </button>
+                    <button id="btn_off" type="button" class="btn btn-warning">
+                        <span class="glyphicon glyphicon-ban-circle" aria-hidden="true"></span>禁用
+                    </button>
+                </div>
+                <table id="tb_loader">
+                    <thead>
+                        <tr>
+                            <th data-radio="true"></th>
+                            <th data-field="classify_name">分类</th>
+                            <th data-field="classify_type">类型标识</th>
+                            <th data-field="sort_index" data-editable="true">排序</th>
+                            <th data-field="is_builtin" data-formatter="formatBuiltin">内置</th>
+                            <th data-field="is_deleted" data-formatter="formatStatus">启用</th>
+                            <th>#</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
+        <!--content end-->
+    </div>
+</div>
+
+<div id="np-alert"></div>
+
+<script type="text/javascript">
+var $tb_loader = $('#tb_loader');
+
+$('#btn_edit').on('click', function(){
+    var selected = $tb_loader.bootstrapTable('getSelections');
+    if (selected.length < 1) {
+        return false;
+    }
+
+    location.href = "{{url('nPubModuleNopCoreModule:Classify:edit')|noescape}}?classify_id="+selected[0].classify_id;
+});
+
+$('#btn_on').on('click', function(){
+    var selected = $tb_loader.bootstrapTable('getSelections');
+    if (selected.length < 1)
+        return false;
+    if (selected[0].is_deleted == 0) {
+        return false;
+    }
+
+    Modal.confirm("#np-alert", {
+        msg: '确定要启用此文件夹？'
+    }).on(function(e){
+        if (e) {
+            $.ajax({
+                url: "{{url('nPubModuleNopCoreModule:Classify:on')|noescape}}",
+                type: 'get',
+                dataType: 'json',
+                data: {classify_id:selected[0].classify_id},
+                success: function(r) {
+                    if (r.success) {
+                        var data = $tb_loader.bootstrapTable('getData');
+                        var index;
+                        for (var i = 0; i < data.length; i++) {
+                            if (data[i].classify_id == r.data.classify_id) {
+                                index = i;
+                            }
+                        }
+                        $tb_loader.bootstrapTable('updateRow', {
+                            index: index,
+                            row: {
+                                classify_id: r.data.classify_id,
+                                classify_name: data[index].classify_name,
+                                sort_index: data[index].sort_index,
+                                is_deleted: 0
+                            }
+                        });
+                    } else {
+                        Modal.alert('#np-alert', {msg:r.error_msg});
+                    }
+                }
+
+            });
+        }
+    });
+});
+
+$('#btn_off').on('click', function(){
+    var selected = $tb_loader.bootstrapTable('getSelections');
+    if (selected.length < 1)
+        return false;
+
+    tipMsg = 1 == selected[0].is_deleted ? '此操作会删除此文件夹，确定要删除此文件夹吗？' : '确定要禁用此文件夹吗？';
+
+    Modal.confirm("#np-alert", {
+        msg: tipMsg
+    }).on(function(e){
+        if (e) {
+            $.ajax({
+                url: "{{url('nPubModuleNopCoreModule:Classify:off')|noescape}}",
+                type: 'get',
+                dataType: 'json',
+                data: {classify_id:selected[0].classify_id},
+                success: function(r) {
+                    if (r.success) {
+                        if (1 == selected[0].is_deleted) {
+                            $tb_loader.bootstrapTable('removeByUniqueId', selected[0].classify_id);
+                        } else {
+                            var data = $tb_loader.bootstrapTable('getData');
+                            var index;
+                            for (var i = 0; i < data.length; i++) {
+                                if (data[i].classify_id == r.data.classify_id) {
+                                    index = i;
+                                }
+                            }
+                            $tb_loader.bootstrapTable('updateRow', {
+                                index: index,
+                                row: {
+                                    classify_id: r.data.classify_id,
+                                    classify_name: data[index].classify_name,
+                                    sort_index: data[index].sort_index,
+                                    is_deleted: 1
+                                }
+                            });
+                        }
+                    } else {
+                        Modal.alert('#np-alert', {msg:r.error_msg});
+                    }
+                }
+
+            });
+        }
+    });
+});
+
+var classifys = jQuery.parseJSON('{{php echo json_encode($classifys, JSON_UNESCAPED_UNICODE)}}');
+$tb_loader.bootstrapTable({
+    treeShowField: 'classify_name',
+    idField: 'classify_id',
+    parentIdField: 'pid',
+    toolbar: '#data-tb-toolbar', //工具按钮容器
+    showColumns: true, //是否显示所有的列
+    clickToSelect: true,
+    uniqueId: 'classify_id', //每一行的唯一标识，一般为主键列
+    striped: true,
+    height: 500,
+    data: classifys,
+    onEditableSave: function(field, row, oldValue, obj) {
+        if (oldValue != row[field]) {
+            $.ajax({
+                url: "{{url('nPubModuleNopCoreModule:Classify:editSortIndex')|noescape}}",
+                type: "get",
+                dataType: "json",
+                data: {classify_id:row['classify_id'],value:row[field]},
+                success: function(r) {
+                    if (r.success) {
+                        $(obj).html(row[field]);
+                    } else {
+                        $(obj).html(oldValue);
+                        Modal.alert('#np-alert', {msg:r.error_msg});
+                    }
+                }
+            });
+        }
+    }
+});
+
+function formatBuiltin(builtin, row, index) {
+    return !builtin ? '' : '<span class="glyphicon glyphicon-ok icon-ok"></span>';
+}
+
+function formatStatus(status, row, index) {
+    return !status ? '<span class="glyphicon glyphicon-ok icon-ok"></span>' : '<span class="glyphicon glyphicon-remove icon-err"></span>';
+}
+</script>
+</body>
+</html>

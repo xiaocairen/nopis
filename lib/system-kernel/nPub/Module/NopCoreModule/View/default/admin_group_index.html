@@ -1,0 +1,261 @@
+<!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+{{include '../header_meta.html'}}
+<link href="/_assets/bootstrap-table/bootstrap-table.min.css" rel="stylesheet" />
+<script src="/_assets/bootstrap-table/bootstrap-table.min.js"></script>
+<style type="text/css">
+#form-group-bm .modal-lg{width: 750px;}
+#permission_list .form-group{margin-bottom: 0;}
+#permission_list .col-sm-2{width: 140px; color: #666;font-weight: normal;}
+#permission_list h5{display: inline-block;float: left;width:85px;margin-left: 15px;padding-left: 20px;color: #666;}
+</style>
+</head>
+
+<body>
+{{include '../top_navbar.html'}}
+
+<div class="container-fluid">
+    <div class="row">
+        <!--sidebar start-->
+        {{include '../left_sidebar.html'}}
+        <!--sidebar end-->
+
+        <!--content start-->
+        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" id="main">
+            <h3 class="page-header"><span>></span>管理员组列表</h3>
+            <div class="panel-body" id="main-body">
+                <div id="data-tb-toolbar" class="btn-group">
+                    <button id="btn_permission" type="button" class="btn btn-default">
+                        <span class="glyphicon glyphicon-lock" aria-hidden="true"></span>权限
+                    </button>
+                    <button id="btn_edit" type="button" class="btn btn-default">
+                        <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>编辑
+                    </button>
+                    <button id="btn_delete" type="button" class="btn btn-default">
+                        <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>删除
+                    </button>
+                    <button id="btn_list" type="button" class="btn btn-default">
+                        <span class="glyphicon glyphicon-list" aria-hidden="true"></span>组员列表
+                    </button>
+                </div>
+                <table id="tb_loader">
+                    <thead>
+                        <tr>
+                            <th data-radio="true"></th>
+                            <th data-field="group_name" data-halign="center">管理员组名</th>
+                            <th data-field="is_forbid" data-formatter="formatStatus" data-align="center" data-halign="center" data-width="80">状态</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
+        <!--content end-->
+    </div>
+</div>
+
+<div id="np-alert"></div>
+
+<!-- Modal -->
+<form class="form-group-bm form-horizontal" id="form-group-bm" role="form">
+<div class="modal fade" id="modalPermissions" tabindex="-1" role="dialog" aria-labelledby="modalPermissions">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">权限 - <span id="selected-groupname"></span></h4>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
+            <div class="modal-footer">
+                <button type="button" class="button button-default button-rounded button-pill button-small" data-dismiss="modal" aria-label="Close">关 闭</button>
+                <button type="button" class="button button-primary button-rounded button-pill button-small" id="save-permission">保 存</button>
+            </div>
+        </div>
+    </div>
+</div>
+</form>
+
+<script type="text/javascript">
+var $tb_loader = $('#tb_loader');
+
+var gmap_ids = [];
+$('#btn_permission').on('click', function(){
+    var selected = $tb_loader.bootstrapTable('getSelections');
+    if (selected.length < 1) {
+        return false;
+    }
+    if (selected[0].group_id == 1) {
+        return false;
+    }
+
+    $('#selected-groupname').html(selected[0].group_name);
+    $('#save-permission').html('保 存');
+    $.ajax({
+        url: "{{url('nPubModuleNopCoreModule:AdminGroup:getPermissions')|noescape}}",
+        type: 'get',
+        dataType: 'json',
+        data: {group_id:selected[0].group_id},
+        success: function(r) {
+            gmap_ids = r.data.gmap_ids;
+            var perhtml = '<div id="permission_list">';
+            for (var i = 0; i < r.data.tree.length; i++) {
+                var toptree = r.data.tree[i];
+                if (undefined !== toptree.childs) {
+                    for (var j = 0; j < toptree.childs.length; j++) {
+                        var style = j == (toptree.childs.length - 1) ? 'style="margin-bottom:10px;"' : '';
+                        perhtml += '<div class="form-group" '+style+'>';
+                        var subtree = toptree.childs[j];
+                        perhtml += j == 0 ? '<h5>'+toptree.menu_name+'</h5>' : '<h5></h5>';
+                        perhtml += '<label class="col-sm-2 control-label">'+subtree.menu_name+'</label>'
+                                    +'<div class="col-sm-8 checkbox">';
+                        if (undefined !== subtree.childs) {
+                            for (var n = 0; n < subtree.childs.length; n++) {
+                                var tree = subtree.childs[n];
+                                var checked = $.inArray(tree.map_id, r.data.gmap_ids) != -1 ? ' checked="checked"' : '';
+                                perhtml += '<label style="margin-right: 20px;margin-bottom: 5px;min-width: 120px;">'
+                                            +'<input type="checkbox" name="map_id[]" value="'+tree.map_id+'" '+checked+' />'+tree.menu_name
+                                            +'</label>';
+                            }
+                        } else {
+                            var checked = $.inArray(subtree.map_id, r.data.gmap_ids) != -1 ? ' checked="checked"' : '';
+                            var disabled = subtree.menu_action == 'nPubModuleNopCoreModule:Default:index' ? ' disabled="disabled"': '';
+                            disabled += disabled != '' && checked == ' checked="checked"' ? '' : '';
+                            perhtml += '<label style="margin-right: 20px;margin-bottom: 5px;min-width: 120px;">'
+                                        +'<input type="checkbox" name="map_id[]" value="'+subtree.map_id+'"'+disabled+' '+checked+' />'+subtree.menu_name
+                                        +'</label>';
+                        }
+                        perhtml += '</div></div>';
+                    }
+                }
+            }
+            perhtml += '</div><input type="hidden" name="group_id" value="'+selected[0].group_id+'" />';
+            $('#modal-body').html(perhtml);
+            $('#modalPermissions').modal();
+        }
+    });
+});
+$('#save-permission').on('click', function(){
+    var smt_btn = this;
+    var form = $('#form-group-bm');
+    var checked_num = 0, need_edit = false;
+    form.find(':checkbox').each(function(){
+        if ($(this).is(':checked')) {
+            checked_num++;
+            var cv = parseInt($(this).val());
+            if (-1 == $.inArray(cv, gmap_ids)) {
+                need_edit = true;
+            }
+        }
+    });
+    if (!need_edit && checked_num == gmap_ids.length) {
+        return false;
+    }
+    $(smt_btn).html('正在提交...').addClass('disabled');
+    $.ajax({
+        url: "{{url('nPubModuleNopCoreModule:AdminGroup:editPermission')|noescape}}",
+        type: 'post',
+        dataType: 'json',
+        data: form.serializeArray(),
+        success: function(r) {
+            $(smt_btn).removeClass('disabled');
+            if (r.success) {
+                $(smt_btn).html('保存成功');
+                setTimeout("$('#modalPermissions').modal('hide')", 900);
+            } else {
+                $('#modalPermissions').modal('hide');
+                Modal.alert('#np-alert', {msg:r.error_msg});
+            }
+        }
+    });
+});
+$('#btn_edit').on('click', function(){
+    var selected = $tb_loader.bootstrapTable('getSelections');
+    if (selected.length < 1) {
+        return false;
+    }
+    if (selected[0].group_id == 1) {
+        return false;
+    }
+    location.href = "{{url('nPubModuleNopCoreModule:AdminGroup:edit')|noescape}}?group_id="+selected[0].group_id;
+});
+$('#btn_delete').on('click', function(){
+    var selected = $tb_loader.bootstrapTable('getSelections');
+    if (selected.length < 1)
+        return false;
+    if (selected[0].group_id == 1) {
+        return false;
+    }
+
+    Modal.confirm("#np-alert", {
+        msg: '确定要删除此管理员组？'
+    }).on(function(e){
+        if (e) {
+            $.ajax({
+                url: "{{url('nPubModuleNopCoreModule:AdminGroup:del')|noescape}}",
+                type: 'get',
+                dataType: 'json',
+                data: {group_id:selected[0].group_id},
+                success: function(r) {
+                    if (r.success) {
+                        $tb_loader.bootstrapTable('removeByUniqueId', selected[0].group_id);
+                    } else {
+                        Modal.alert('#np-alert', {msg:r.error_msg});
+                    }
+                }
+
+            });
+        }
+    });
+});
+
+$('#btn_list').on('click', function(){
+    var selected = $tb_loader.bootstrapTable('getSelections');
+    if (selected.length < 1) {
+        return false;
+    }
+
+    location.href = "{{url('nPubModuleNopCoreModule:AdminGroup:adminList')|noescape}}?group_id="+selected[0].group_id;
+});
+
+$tb_loader.bootstrapTable({
+    url: "{{url('nPubModuleNopCoreModule:AdminGroup:list')|noescape}}", //请求后台的URL（*）
+    method: 'get', //请求方式（*）
+    toolbar: '#data-tb-toolbar', //工具按钮容器
+    pagination: true, //是否显示分页（*）
+    sortable: false, //是否启用排序
+    sidePagination: "server", //分页方式：client客户端分页，server服务端分页（*）
+    pageNumber: 1, //初始化加载第一页，默认第一页
+    pageSize: 10, //每页的记录行数（*）
+    pageList: [10, 25, 50, 100], //可供选择的每页的行数（*）
+    paginationLoop: false,
+    showColumns: true, //是否显示所有的列
+    clickToSelect: true,
+    uniqueId: "group_id", //每一行的唯一标识，一般为主键列
+    search:true,
+    searchOnEnterKey:true,
+    queryParams: function(params) {
+        var p = {
+            limit: params.limit,
+            offset: params.offset,
+            search: params.search
+        };
+        return p;
+    },
+    responseHandler: function(r) {
+        if (r.success) {
+            return r.data;
+        } else {
+            Modal.alert('#np-alert', {msg:r.error_msg});
+            return false;
+        }
+    }
+});
+
+
+function formatStatus(status, row, index) {
+    return status ? '<span class="glyphicon glyphicon-remove icon-err"></span>' : '<span class="glyphicon glyphicon-ok icon-ok"></span>';
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+<div class="col-sm-3 col-md-2 sidebar" id="sidebar">
+    <ul n:foreach="$bm_tree as $top_tree" n:if="$top_tree->if_show" class="nav nav-sidebar sidebar-menu" id="sidebar-{{$top_tree->map_id}}" {{if $top_tree->active}}style="display: block;"{{/if}}>
+    {{if isset($top_tree->childs)}}
+        {{foreach $top_tree->childs as $sub_tree}}
+            {{if $sub_tree->if_show}}
+                {{if property_exists($sub_tree, 'childs')}}
+                <li class="menu-parent">
+                    <a href="javascript:;" class="__p_menu_item">{{$sub_tree->menu_name}}<span class="glyphicon glyphicon-chevron-down"></span></a>
+                    <ul class="menu-sub">
+                    {{foreach $sub_tree->childs as $_t}}
+                        {{if $_t->if_show}}
+                        <li><a href="{{$_t->menu_url}}" class="__menu_item{{if $_t->active}} active{{/if}}">{{$_t->menu_name}}</a></li>
+                        {{/if}}
+                    {{/foreach}}
+                    </ul>
+                </li>
+                {{else}}
+                <li><a href="{{$sub_tree->menu_url}}" class="__menu_item{{if $sub_tree->active}} active{{/if}}">{{$sub_tree->menu_name}}</a></li>
+                {{/if}}
+            {{/if}}
+        {{/foreach}}
+    {{/if}}
+    </ul>
+</div>
